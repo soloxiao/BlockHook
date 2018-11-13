@@ -36,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, nullable, readonly) NSString *mangleName;
 
+//自定义
+@property (nonatomic, strong) NSArray *argumests;
+
 /**
  Remove token will revert the hook.
 
