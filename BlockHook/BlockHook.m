@@ -562,6 +562,8 @@ static int BHArgCount(const char *str)
     NSMethodSignature *hookBlockSignature = [NSMethodSignature signatureWithObjCTypes:BHBlockTypeEncodeString(self.hookBlock)];
     NSInvocation *blockInvocation = [NSInvocation invocationWithMethodSignature:hookBlockSignature];
     
+      NSInvocation *originalInvocation = [NSInvocation invocationWithMethodSignature:self.originalBlockSignature];
+    
     // origin block invoke func arguments: block(self), ...
     // hook block signature arguments: block(self), token, ...
     
@@ -573,8 +575,27 @@ static int BHArgCount(const char *str)
     if (hookBlockSignature.numberOfArguments > 1) {
         [blockInvocation setArgument:(void *)&self atIndex:1];
     }
-
+    
+    
     void *argBuf = NULL;
+    //----------------------  保留一份原始block签名的参数 ---------------------------------------------------------
+    for (NSInteger index = 1; index < self.originalBlockSignature.numberOfArguments; index++) {
+        const char *argType = [self.originalBlockSignature getArgumentTypeAtIndex:index];
+        NSUInteger argSize;
+        NSGetSizeAndAlignment(argType, &argSize, NULL);
+        if (!(argBuf = reallocf(argBuf, argSize))) {
+            NSLog(@"Failed to allocate memory for block invocation.");
+            return NO;
+        }
+        memcpy(argBuf, args[index], argSize);
+        [originalInvocation setArgument:argBuf atIndex:index];
+    }
+    
+    
+    self.arguments = [originalInvocation blockHook_arguments];
+    
+    //-----------------------------------------------------------------------------
+
     for (NSUInteger idx = 2; idx < hookBlockSignature.numberOfArguments; idx++) {
         const char *type = [self.originalBlockSignature getArgumentTypeAtIndex:idx - 1];
         NSUInteger argSize;
